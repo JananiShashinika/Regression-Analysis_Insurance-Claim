@@ -1,0 +1,405 @@
+---
+title: "ST301_A1_S17_394"
+author: "Janani Shashinika"
+date: '2022-11-03'
+output: pdf_document
+---
+
+INTRODUCTION - 
+
+ An insurance company wants to develop a model to predict the annual medical claims made by its customers. The data analytic team of the company assumes that the following variables may be useful in predicting the annual medical claims made by a given policyholder.
+
+1. age : age of the policyholder
+2. gender : the policyholder’s gender - female, male
+3. bmi : body mass index of the policyholder
+4. num dependents : number of dependents covered by the health               insurance (spouse and children below age 18)
+5. is smoker : smoking status of the policyholder - yes, no
+6. working env : working environment of the policyholder -                   construction site, factory, office
+7. tot claims : total amount of claims made by the policyholder
+
+  We have given six independent variables (including 3 categorical variables- sex, is_smoker, working_env) and one response variable (tot_claims)
+ since only one response variable and more than one independent variables, we have to use Multiple Linear Regression to find the predictions for this problem.
+
+We use ‘insurance_claims’ dataset to explore the relationships between the response variable and the other 06
+variables.
+
+
+```{r}
+ins_claims = read.csv("insurance_claims.csv")
+head(ins_claims)
+```
+
+
+EXPLORATORY ANALYSIS -
+
+Here, we are going to convert the Categorical data(sex, is_smoker and working_env) into Numerical form to make the predictive models.
+
+```{r}
+ins_claims$sex = as.numeric(factor(ins_claims$sex,labels = c("male","female")))
+
+ins_claims$is_smoker = as.numeric(factor(ins_claims$is_smoker,labels = c("no","yes")))
+```
+
+
+```{r}
+ins_claims$working_env = as.numeric(factor(ins_claims$working_env,labels = c("factory","office","construction_site")))
+
+head(ins_claims)
+```
+
+```{r}
+dim(ins_claims)
+```
+
+Number of observations in the data set = 1338
+
+```{r}
+str(ins_claims)
+```
+
+```{r}
+pairs(~tot_claims+age+sex+bmi+is_smoker+working_env,data = ins_claims)
+```
+We can assume that there are no missing values in the dataset according to the summary statistics.
+
+MODEL FITTING - 
+
+Here let's use Forward selection method that based on adjusted R squared value as the variable selection method.
+
+Iteration 01 : 
+
+```{r}
+summary(lm(tot_claims~sex,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~age,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~bmi,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~children,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~is_smoker,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env,data=ins_claims))$adj.r.squared
+``` 
+working_env is added - R squared value = 0.8614734
+
+Iteration 02 - 
+
+```{r}
+summary(lm(tot_claims~working_env+age,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+sex,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+bmi,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+children,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+is_smoker,data=ins_claims))$adj.r.squared
+```
+Age is added - R squared value= 0.886051
+
+Iteration 03 - 
+
+```{r}
+summary(lm(tot_claims~working_env+age+sex,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+age+bmi,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+age+children,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker,data=ins_claims))$adj.r.squared
+```
+is_smoker is added - R squared value = 0.9013036
+
+
+Iteration 04 - 
+
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+sex,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+bmi,data=ins_claims))$adj.r.squared
+
+```
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+children,data=ins_claims))$adj.r.squared
+```
+bmi is added - R squared value = 0.903542
+
+Iteration 05 -
+
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+bmi+sex,data=ins_claims))$adj.r.squared
+```
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+bmi+children,data=ins_claims))$adj.r.squared
+```
+children is added - R squared value = 0.9085069
+
+Iteration 06 - 
+
+```{r}
+summary(lm(tot_claims~working_env+age+is_smoker+bmi+children+sex,data=ins_claims))$adj.r.squared
+```
+
+
+Graph of the Adjusted R squared Values - 
+
+```{r}
+plot(c(1,2,3,4,5,6),c(0.8614734,0.886051,0.9013036,0.9063182,0.9085069,0.9085106), xlab = "Number of variables i the model", ylab = "Adjusted R-squared Values",type = "o")
+```
+Here, We can remove the sex variable since there is no significant increment of Adjusted R squared value in Iteration 06.
+
+
+Forward Selection based on F-test - 
+
+```{r}
+con.model = lm(tot_claims ~ 1, data = ins_claims)
+add1(con.model,scope = tot_claims~age+sex+bmi+children+is_smoker+working_env,test="F")
+```
+
+According to the p-values age, is_smoker and working_env are significant.
+First, let's add working_env to the model.
+
+```{r}
+add1(update(con.model, ~ . +working_env), scope = tot_claims~age+sex+bmi+children+is_smoker+working_env, test = "F")
+```
+
+We can add age to the model since it has most significant p value.
+
+```{r}
+add1(update(con.model, ~ . +working_env+age), scope = tot_claims~age+sex+bmi+children+is_smoker+working_env , test = "F")
+```
+We can add is_smoker to the model since it has the p value now.
+
+```{r}
+add1(update(con.model, ~ . +working_env+age+is_smoker), scope = tot_claims~age+sex+bmi+children+is_smoker+working_env, test = "F")
+```
+
+Now we can add bmi  to the model as it has the most significant p value.
+
+```{r}
+add1(update(con.model, ~ . +working_env+age+is_smoker+bmi), scope = tot_claims~age+sex+bmi+children+is_smoker+working_env, test = "F")
+```
+
+Now children can be added to the model as it has the significant p value.
+
+
+```{r}
+add1(update(con.model, ~ . +working_env+age+is_smoker+bmi+children), scope = tot_claims~age+sex+bmi+children+is_smoker+working_env, test = "F")
+```
+
+Here we can not add the sex variable to the model,because it's p value is greater than 0.05.
+Therefore we can remove the sex variable from the model, according to the forward selection method selection  method based on F test.
+
+
+Reduced Model - 
+
+```{r}
+reduced_model = lm(tot_claims ~ working_env+age+is_smoker+bmi+children,data = ins_claims)
+summary(reduced_model)
+```
+
+We can say that the model is significant because the p value of this reduced model is 2.2e-16.as concluded from the adjusted R squared value of 0.9085 ,there is a strong relationship between the variables.
+
+```{r}
+full_model = lm(tot_claims ~ . , data = ins_claims)
+summary(full_model)
+```
+
+
+
+VALIDATION -
+
+Using the partial f test we can check  whether the reduced model is adequate or not.
+Null hypothesis(Ho) : Reduced model is not adequate
+Alternative hypothesis : Reduced model is not adequate
+
+```{r}
+
+anova(reduced_model,full_model)
+```
+
+Considering the anova table, the p-value of this fitted regression model is 0.3048.
+Since it is greater than 0.05,we do not have enough evidence to reject the null hypothesis(Ho).
+Therefore we can say, there is enough evidence to say that the reduced model is adequate.
+
+
+Residual Analysis - 
+
+```{r}
+par(mfrow=c(2,2))
+plot(reduced_model)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+library(performance)
+check_normality(reduced_model)
+```
+
+The points on the Normal Q-Q plot(the plot of the standardized residuals vs the theoretical quantiles)
+provide an indication of the normality of the residuals.If the error terms are normally distributed, the points
+will fall on the 45-degree reference line.But in here, it is slightly deviated in the bottom end and the upper
+end(two tails ).Only the upper Middle part is aligned with the 45-degree reference line.So they are not
+normally distributed and the normality assumption is violated.
+
+
+
+
+```{r}
+library(tidyverse)
+library(performance)
+check_heteroscedasticity(reduced_model)
+```
+
+The bottom left plot shows that the assumption of constant variance is violated in this dataset, as the line is not horizontal but shows a some different pattern.
+
+
+```{r}
+library(tidyverse)
+library(performance)
+check_autocorrelation(reduced_model)
+```
+
+The error terms are uncorrelated.
+
+```{r}
+library(tidyverse)
+library(performance)
+check_outliers(reduced_model)
+```
+
+Therefore,No outliers were detected in this model.
+
+```{r}
+cor(ins_claims)
+```
+
+```{r}
+library(car)
+```
+
+```{r}
+library(quantmod)
+```
+
+
+```{r}
+library(MASS)
+```
+
+```{r}
+vif(reduced_model)
+```
+
+There is no any violation in multicollinearity in the model, since the vif scores are far below to 5.
+
+```{r}
+vifval = vif(reduced_model)
+barplot(vifval,main = "VIF Values", horiz = TRUE, col = "beige")
+abline(v=4, lwd=3,lty=2)
+```
+
+Considering the 04 assumptions two are violated- Normality and Heteroscedasticity
+
+
+
+DISCUSSION AND CONCLUSION - 
+
+  As the normality assumption and the heteroscedasticity are violated let's use log transformation method to fix
+the violations here.
+
+```{r}
+
+ins_claims2 = lm(log(tot_claims) ~ age+working_env+is_smoker+bmi+children,data = ins_claims)
+summary(ins_claims2)
+```
+
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(ins_claims2)
+```
+
+
+```{r}
+library(tidyverse)
+library(performance)
+check_heteroscedasticity(ins_claims2)
+```
+
+The constant variance(homoscedastic) among the residuals is detected now and the violation has fixed.
+
+
+```{r}
+library(tidyverse)
+library(performance)
+check_autocorrelation(ins_claims2)
+```
+Here, the autocorrelation assumption is not violated as previous.
+
+```{r}
+library(tidyverse)
+library(performance)
+check_outliers(ins_claims2)
+```
+
+Here, we can not define any outliers.
+
+
+```{r}
+library(tidyverse)
+library(performance)
+check_normality(ins_claims2)
+```
+
+Normality assumption is still violated.
+
+
+```{r}
+library(car)
+library(quantmod)
+library(MASS)
+vif(ins_claims2)
+```
+
+
+```{r}
+vifval = vif(ins_claims2)
+barplot(vifval,main = "VIF Values", horiz = TRUE, col = "light green")
+abline(v=4, lwd=3,lty=2)
+```
+
+
+The vif scores are far below 4.Therefore, the independent variables are not highly correlated and multicollinearity
+assumption is not violated.
+Considering the Central Limit Theorem,that tha distrbution of residuals will approximately normal.
+Finally, as we have a large sample of data in this case,we can approximate the normality here.
+ Assuming all factors and we can get final output like as follows.
+
+```{r}
+coef(ins_claims2)
+```
+
+
+Therefore the final model is,
+
+log(tot_claims) = 8.9522670887 + (-0.7063503004)working_env + (0.0291043745)age + (0.5641607659)is_smoker
++ (0.0003438572)bmi + (0.1014024291)children
